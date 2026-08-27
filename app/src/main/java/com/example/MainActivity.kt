@@ -74,74 +74,10 @@ fun SmartSchedulerApp() {
         }
     }
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            ModalDrawerSheet {
-                AppNavigationDrawerContent(
-                    currentScreen = uiState.currentScreen,
-                    activeRole = uiState.activeRole,
-                    namaMadrasah = namaMadrasah,
-                    tahunPelajaran = tahunPelajaran,
-                    semester = semester,
-                    onNavigate = { screen ->
-                        viewModel.navigateTo(screen)
-                    },
-                    onCloseDrawer = {
-                        coroutineScope.launch { drawerState.close() }
-                    }
-                )
-            }
-        }
-    ) {
-        Scaffold(
-            topBar = {
-                CenterAlignedTopAppBar(
-                    title = {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = uiState.currentScreen.title,
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                            )
-                            Text(
-                                text = namaMadrasah,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = {
-                            coroutineScope.launch {
-                                if (drawerState.isClosed) drawerState.open() else drawerState.close()
-                            }
-                        }) {
-                            Icon(Icons.Default.Menu, contentDescription = "Menu Navigasi")
-                        }
-                    },
-                    actions = {
-                        Surface(
-                            shape = MaterialTheme.shapes.small,
-                            color = MaterialTheme.colorScheme.tertiaryContainer,
-                            modifier = Modifier.padding(end = 12.dp)
-                        ) {
-                            Text(
-                                text = uiState.activeRole,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onTertiaryContainer
-                                )
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    )
-                )
-            },
-            snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
-        ) { innerPadding ->
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val isWideScreen = maxWidth >= 800.dp
+
+        val contentBlock: @Composable (PaddingValues) -> Unit = { innerPadding ->
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -259,6 +195,103 @@ fun SmartSchedulerApp() {
                         onSavePengaturan = { key, valStr -> viewModel.savePengaturan(key, valStr) },
                         onResetSampleData = { viewModel.resetSampleData() }
                     )
+                }
+            }
+        }
+
+        val topBarBlock: @Composable () -> Unit = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = uiState.currentScreen.title,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                        )
+                        Text(
+                            text = "$namaMadrasah • $tahunPelajaran ($semester)",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
+                navigationIcon = {
+                    if (!isWideScreen) {
+                        IconButton(onClick = {
+                            coroutineScope.launch {
+                                if (drawerState.isClosed) drawerState.open() else drawerState.close()
+                            }
+                        }) {
+                            Icon(Icons.Default.Menu, contentDescription = "Menu Navigasi")
+                        }
+                    } else {
+                        IconButton(onClick = { }) {
+                            Icon(Icons.Default.Dashboard, contentDescription = "Web Dashboard")
+                        }
+                    }
+                },
+                actions = {
+                    Surface(
+                        shape = MaterialTheme.shapes.small,
+                        color = MaterialTheme.colorScheme.tertiaryContainer,
+                        modifier = Modifier.padding(end = 12.dp)
+                    ) {
+                        Text(
+                            text = uiState.activeRole,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            )
+        }
+
+        if (isWideScreen) {
+            Row(modifier = Modifier.fillMaxSize()) {
+                AppNavigationDrawerContent(
+                    currentScreen = uiState.currentScreen,
+                    activeRole = uiState.activeRole,
+                    namaMadrasah = namaMadrasah,
+                    tahunPelajaran = tahunPelajaran,
+                    semester = semester,
+                    onNavigate = { screen -> viewModel.navigateTo(screen) },
+                    onCloseDrawer = {}
+                )
+                VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                Scaffold(
+                    topBar = topBarBlock,
+                    snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+                ) { innerPadding ->
+                    contentBlock(innerPadding)
+                }
+            }
+        } else {
+            ModalNavigationDrawer(
+                drawerState = drawerState,
+                drawerContent = {
+                    ModalDrawerSheet {
+                        AppNavigationDrawerContent(
+                            currentScreen = uiState.currentScreen,
+                            activeRole = uiState.activeRole,
+                            namaMadrasah = namaMadrasah,
+                            tahunPelajaran = tahunPelajaran,
+                            semester = semester,
+                            onNavigate = { screen -> viewModel.navigateTo(screen) },
+                            onCloseDrawer = { coroutineScope.launch { drawerState.close() } }
+                        )
+                    }
+                }
+            ) {
+                Scaffold(
+                    topBar = topBarBlock,
+                    snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+                ) { innerPadding ->
+                    contentBlock(innerPadding)
                 }
             }
         }
