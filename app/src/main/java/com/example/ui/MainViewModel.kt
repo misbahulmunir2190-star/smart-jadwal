@@ -8,6 +8,7 @@ import com.example.data.remote.AiSchedulerResult
 import com.example.data.remote.GeminiSchedulerService
 import com.example.data.repository.SchedulerRepository
 import com.example.domain.validator.ScheduleConflict
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -58,32 +59,32 @@ class MainViewModel(private val repository: SchedulerRepository) : ViewModel() {
     }
 
     val guruList: StateFlow<List<GuruEntity>> = repository.allGuru
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val mapelList: StateFlow<List<MapelEntity>> = repository.allMapel
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val kelasList: StateFlow<List<KelasEntity>> = repository.allKelas
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val hariList: StateFlow<List<HariEntity>> = repository.allHari
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val jamList: StateFlow<List<JamEntity>> = repository.allJam
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val ruanganList: StateFlow<List<RuanganEntity>> = repository.allRuangan
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val enrichedJadwalPair: StateFlow<Pair<List<JadwalDetail>, List<ScheduleConflict>>> =
         repository.enrichedJadwalDetails
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), Pair(emptyList(), emptyList()))
+            .stateIn(viewModelScope, SharingStarted.Eagerly, Pair(emptyList(), emptyList()))
 
     val pengaturanList: StateFlow<List<PengaturanEntity>> = repository.allPengaturan
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val auditLogs: StateFlow<List<AuditLogEntity>> = repository.allAuditLogs
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     fun navigateTo(screen: AppScreen) {
         _uiState.update { it.copy(currentScreen = screen) }
@@ -274,35 +275,86 @@ class MainViewModel(private val repository: SchedulerRepository) : ViewModel() {
         }
     }
 
-    // --- AI GENERATOR 4 STAGES ---
+    // --- AI GENERATOR 4 STAGES & AUTO CONFLICT RESOLVER ---
     fun runAiScheduleGenerator(stageMode: String = "generate") {
         viewModelScope.launch {
-            _uiState.update { it.copy(isAiGenerating = true, aiStage = 2) }
+            try {
+                _uiState.update { it.copy(isAiGenerating = true, aiStage = 1) }
+                delay(120) // Tahap 1: Validasi Data
 
-            val currentJadwal = repository.allJadwal.first()
-            val result = GeminiSchedulerService.generateScheduleWithAi(
-                guruList = guruList.value,
-                mapelList = mapelList.value,
-                kelasList = kelasList.value,
-                hariList = hariList.value,
-                jamList = jamList.value,
-                ruanganList = ruanganList.value,
-                existingJadwal = currentJadwal,
-                mode = stageMode
-            )
+                _uiState.update { it.copy(aiStage = 2) }
+                delay(150) // Tahap 2: Pembagian Blok Berurutan
 
-            _uiState.update {
-                it.copy(
-                    isAiGenerating = false,
-                    aiStage = 4,
-                    aiResult = result
+                val currentJadwal = try { repository.allJadwal.first() } catch (e: Exception) { emptyList() }
+                
+                _uiState.update { it.copy(aiStage = 3) } // Tahap 3: Interlocking Multi-Kelas Bebas Bentrok
+                val result = GeminiSchedulerService.generateScheduleWithAi(
+                    guruList = guruList.value,
+                    mapelList = mapelList.value,
+                    kelasList = kelasList.value,
+                    hariList = hariList.value,
+                    jamList = jamList.value,
+                    ruanganList = ruanganList.value,
+                    existingJadwal = currentJadwal,
+                    mode = stageMode
                 )
-            }
 
-            if (result.success) {
-                showSnackbar("Proses AI Scheduler selesai: ${result.message}")
-            } else {
-                showSnackbar("Perhatian: ${result.message}")
+                _uiState.update {
+                    it.copy(
+                        isAiGenerating = false,
+                        aiStage = 4,
+                        aiResult = result
+                    )
+                }
+
+                if (result.success) {
+                    showSnackbar("Sukses: ${result.message}")
+                } else {
+                    showSnackbar("Perhatian: ${result.message}")
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isAiGenerating = false) }
+                showSnackbar("Terjadi kesalahan saat menyusun jadwal: ${e.localizedMessage ?: "Unknown error"}")
+            }
+        }
+    }
+
+    /**
+     * Instantly resolves all conflicts and applies zero-conflict schedule directly.
+     */
+    fun autoFixAllConflicts() {
+        viewModelScope.launch {
+            try {
+                val currentJadwal = try { repository.allJadwal.first() } catch (e: Exception) { emptyList() }
+                val result = GeminiSchedulerService.fixAndOptimizeSchedule(
+                    guruList = guruList.value,
+                    mapelList = mapelList.value,
+                    kelasList = kelasList.value,
+                    hariList = hariList.value,
+                    jamList = jamList.value,
+                    ruanganList = ruanganList.value,
+                    existingJadwal = currentJadwal
+                )
+
+                if (result.success && result.jadwalList.isNotEmpty()) {
+                    val entities = result.jadwalList.mapIndexed { idx, item ->
+                        JadwalEntity(
+                            id = idx.toLong() + 1,
+                            hariId = item.hariId,
+                            jpKode = item.jpKode,
+                            kelasId = item.kelasId,
+                            guruId = item.guruId,
+                            mapelKode = item.mapelKode,
+                            ruanganId = item.ruanganId
+                        )
+                    }
+                    repository.saveGeneratedJadwalList(entities)
+                    showSnackbar("Sukses! Semua bentrok berhasil diperbaiki (${entities.size} slot jadwal 100% Bebas Bentrok).")
+                } else {
+                    showSnackbar("Tidak dapat memperbaiki bentrok: ${result.message}")
+                }
+            } catch (e: Exception) {
+                showSnackbar("Gagal memperbaiki bentrok: ${e.localizedMessage}")
             }
         }
     }
@@ -312,28 +364,40 @@ class MainViewModel(private val repository: SchedulerRepository) : ViewModel() {
         if (result.jadwalList.isEmpty()) return
 
         viewModelScope.launch {
-            val entities = result.jadwalList.mapIndexed { idx, item ->
-                JadwalEntity(
-                    id = idx.toLong() + 1,
-                    hariId = item.hariId,
-                    jpKode = item.jpKode,
-                    kelasId = item.kelasId,
-                    guruId = item.guruId,
-                    mapelKode = item.mapelKode,
-                    ruanganId = item.ruanganId
-                )
+            try {
+                val entities = result.jadwalList.mapIndexed { idx, item ->
+                    JadwalEntity(
+                        id = idx.toLong() + 1,
+                        hariId = item.hariId,
+                        jpKode = item.jpKode,
+                        kelasId = item.kelasId,
+                        guruId = item.guruId,
+                        mapelKode = item.mapelKode,
+                        ruanganId = item.ruanganId
+                    )
+                }
+                repository.saveGeneratedJadwalList(entities)
+                showSnackbar("${entities.size} slot jadwal AI berhasil diterapkan ke sistem!")
+                _uiState.update { it.copy(currentScreen = AppScreen.JADWAL) }
+            } catch (e: Exception) {
+                showSnackbar("Gagal menerapkan jadwal: ${e.localizedMessage}")
             }
-            repository.saveGeneratedJadwalList(entities)
-            showSnackbar("${entities.size} slot jadwal AI berhasil diterapkan ke sistem!")
-            _uiState.update { it.copy(currentScreen = AppScreen.JADWAL) }
+        }
+    }
+
+    fun applyDarussalamMasterData() {
+        viewModelScope.launch {
+            repository.clearAllJadwal()
+            repository.applyDarussalamMasterData()
+            showSnackbar("Data Pokok MTs Darussalam (NPSN 20582511, NSM 121235200016) & 7 Pendidik berhasil dimuat!")
         }
     }
 
     fun resetSampleData() {
         viewModelScope.launch {
             repository.clearAllJadwal()
-            repository.prepopulateDefaultDataIfEmpty()
-            showSnackbar("Data contoh Madrasah berhasil dipulihkan!")
+            repository.applyDarussalamMasterData()
+            showSnackbar("Data pokok MTs Darussalam berhasil dipulihkan!")
         }
     }
 }

@@ -187,52 +187,93 @@ fun AiSchedulerScreen(
 
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        Text(
-                            text = "Gemini AI akan membaca seluruh konstrain Guru, Mapel, Kelas, Hari, Jam, dan Ruangan untuk menghasilkan jadwal yang optimal dan bebas bentrok.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.ViewTimeline,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Aturan Blok Berurutan & Distribusi Hari:",
+                                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "• Maksimal 3 JP per mapel dalam 1 hari secara berurutan (tanpa loncat jam).\n" +
+                                            "• Alokasi jam > 3 JP otomatis dibagi ke hari berbeda:\n" +
+                                            "  - Mapel 4 JP ➔ Dibagi 2 JP + 2 JP di 2 hari berbeda\n" +
+                                            "  - Mapel 5 JP ➔ Dibagi 3 JP + 2 JP di 2 hari berbeda\n" +
+                                            "  - Mapel 6 JP ➔ Dibagi 3 JP + 3 JP di 2 hari berbeda\n" +
+                                            "• Slot jam istirahat dan Sholat Jumat dikosongkan secara ketat.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
 
                         Spacer(modifier = Modifier.height(16.dp))
 
                         if (isGenerating) {
                             Column(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                                    .padding(16.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                CircularProgressIndicator()
-                                Spacer(modifier = Modifier.height(8.dp))
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(36.dp),
+                                    strokeWidth = 3.dp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                val stageText = when (aiStage) {
+                                    1 -> "Tahap 1/4: Memvalidasi Kesiapan & Kuota Data Master..."
+                                    2 -> "Tahap 2/4: Membagi Blok Berurutan (Maks 3 JP/Hari)..."
+                                    3 -> "Tahap 3/4: Melakukan Interlocking Solver Bebas Bentrok..."
+                                    else -> "Tahap 4/4: Finalisasi & Verifikasi 0 Bentrok..."
+                                }
                                 Text(
-                                    text = "Gemini AI sedang menghitung kombinasi jadwal tanpa bentrok...",
-                                    style = MaterialTheme.typography.bodySmall,
+                                    text = stageText,
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                                     color = MaterialTheme.colorScheme.primary
                                 )
                             }
                         } else {
-                            Row(
+                            Column(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Button(
                                     onClick = { onRunAiScheduler("generate") },
-                                    modifier = Modifier.weight(1f),
+                                    modifier = Modifier.fillMaxWidth(),
                                     enabled = isDataReady,
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Icon(Icons.Default.AutoAwesome, contentDescription = null)
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Susun Jadwal AI")
+                                    Text("⚡ Susun Jadwal Otomatis (0 Detik • Bebas Bentrok)")
                                 }
 
                                 OutlinedButton(
                                     onClick = { onRunAiScheduler("fix_conflicts") },
-                                    modifier = Modifier.weight(1f),
+                                    modifier = Modifier.fillMaxWidth(),
                                     enabled = isDataReady,
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Icon(Icons.Default.Build, contentDescription = null)
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Perbaiki Bentrok")
+                                    Text("🔧 Perbaiki Seluruh Bentrok Jadwal")
                                 }
                             }
                         }

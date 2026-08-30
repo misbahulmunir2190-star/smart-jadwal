@@ -1,8 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item
-        android:width="66dp"
-        android:height="66dp"
-        android:drawable="@drawable/smart_scheduler_icon_1785019801119"
-        android:gravity="center" />
-</layer-list>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Center group within 66dp safe zone (21dp to 87dp) -->
+    <group
+        android:pivotX="54"
+        android:pivotY="54">
+        <!-- Calendar Card Background -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M32,32 h44 c3.3,0 6,2.7 6,6 v38 c0,3.3 -2.7,6 -6,6 H32 c-3.3,0 -6,-2.7 -6,-6 V38 c0,-3.3 2.7,-6 6,-6 z" />
+        <!-- Calendar Header (Emerald Green) -->
+        <path
+            android:fillColor="#047857"
+            android:pathData="M32,32 h44 c3.3,0 6,2.7 6,6 v10 H26 V38 c0,-3.3 2.7,-6 6,-6 z" />
+        <!-- Calendar Rings / Pins -->
+        <path
+            android:fillColor="#F59E0B"
+            android:pathData="M37,27 h4 v8 h-4 z M67,27 h4 v8 h-4 z" />
+        <!-- Schedule Grid Cells -->
+        <path
+            android:fillColor="#10B981"
+            android:pathData="M34,54 h10 v6 H34 z M49,54 h10 v6 H49 z M64,54 h10 v6 H64 z M34,66 h10 v6 H34 z M49,66 h10 v6 H49 z" />
+        <!-- Active AI Sparkle Accent / Clock at Bottom Right -->
+        <path
+            android:fillColor="#F59E0B"
+            android:pathData="M69,63 l2,4 l4,2 l-4,2 l-2,4 l-2,-4 l-4,-2 l4,-2 z" />
+    </group>
+</vector>

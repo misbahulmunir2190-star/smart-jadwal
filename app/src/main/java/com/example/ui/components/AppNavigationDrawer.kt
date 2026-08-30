@@ -6,6 +6,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -171,7 +172,7 @@ private fun getIconForScreen(screen: AppScreen): ImageVector {
     return when (screen) {
         AppScreen.DASHBOARD -> Icons.Default.Home
         AppScreen.GURU -> Icons.Default.Person
-        AppScreen.MAPEL -> Icons.Default.MenuBook
+        AppScreen.MAPEL -> Icons.AutoMirrored.Filled.MenuBook
         AppScreen.KELAS -> Icons.Default.Class
         AppScreen.HARI -> Icons.Default.Today
         AppScreen.JAM -> Icons.Default.AccessTime

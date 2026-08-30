@@ -237,7 +237,7 @@ private fun KelasFormDialog(
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedGuruPicker) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .menuAnchor()
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
                     )
 
                     ExposedDropdownMenu(

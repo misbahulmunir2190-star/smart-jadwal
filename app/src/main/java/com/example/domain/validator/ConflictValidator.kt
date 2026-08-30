@@ -15,7 +15,9 @@ enum class ConflictType {
     KELAS_BENTROK,
     RUANGAN_BENTROK,
     BEBAN_GURU_MELAMPAUI,
-    JAM_ISTIRAHAT
+    JAM_ISTIRAHAT,
+    MAPEL_MELEBIHI_MAX_JP_HARIAN,
+    MAPEL_TIDAK_BERURUTAN
 }
 
 object ConflictValidator {
@@ -37,6 +39,10 @@ object ConflictValidator {
         val hariMap = hariList.associateBy { it.id }
         val jamMap = jamList.associateBy { it.jpKode }
         val ruanganMap = ruanganList.associateBy { it.id }
+
+        // Active jam order map for checking consecutive sequence
+        val activeJamOrdered = jamList.filter { !it.isIstirahat && !it.isSholatJumat }.map { it.jpKode }
+        val jamOrderMap = activeJamOrdered.withIndex().associate { it.value to it.index }
 
         // 1. Group by Hari + JP + Guru (Check Guru Bentrok)
         val guruSlotGroup = jadwalList.groupBy { "${it.hariId}_${it.jpKode}_${it.guruId}" }
@@ -128,6 +134,53 @@ object ConflictValidator {
                         affectedJadwalIds = listOf(j.id)
                     )
                 )
+            }
+        }
+
+        // 6. Check Aturan Maksimal 3 JP per Mapel per Hari dan Berurutan (Consecutive)
+        val kelasHariMapelGroup = jadwalList.groupBy { "${it.kelasId}_${it.hariId}_${it.mapelKode}" }
+        kelasHariMapelGroup.forEach { (_, list) ->
+            val sample = list.first()
+            val kelasNama = kelasMap[sample.kelasId]?.namaKelas ?: "Kelas #${sample.kelasId}"
+            val hariNama = hariMap[sample.hariId]?.namaHari ?: "Hari #${sample.hariId}"
+            val mapelNama = mapelMap[sample.mapelKode]?.namaMapel ?: sample.mapelKode
+
+            // A. Maksimal 3 JP per mapel dalam satu hari
+            if (list.size > 3) {
+                conflicts.add(
+                    ScheduleConflict(
+                        type = ConflictType.MAPEL_MELEBIHI_MAX_JP_HARIAN,
+                        hariId = sample.hariId,
+                        jpKode = sample.jpKode,
+                        message = "Mapel $mapelNama di kelas $kelasNama mencapai ${list.size} JP pada hari $hariNama (Maksimal 3 JP per hari, alokasi >3 JP harus dibagi ke hari lain)",
+                        affectedJadwalIds = list.map { it.id }
+                    )
+                )
+            }
+
+            // B. Harus berurutan (Consecutive)
+            if (list.size in 2..3) {
+                val indices = list.mapNotNull { jamOrderMap[it.jpKode] }.sorted()
+                var isConsecutive = true
+                if (indices.size == list.size) {
+                    for (i in 0 until indices.size - 1) {
+                        if (indices[i + 1] != indices[i] + 1) {
+                            isConsecutive = false
+                            break
+                        }
+                    }
+                }
+                if (!isConsecutive) {
+                    conflicts.add(
+                        ScheduleConflict(
+                            type = ConflictType.MAPEL_TIDAK_BERURUTAN,
+                            hariId = sample.hariId,
+                            jpKode = sample.jpKode,
+                            message = "Mapel $mapelNama di kelas $kelasNama pada hari $hariNama tidak berurutan (${list.joinToString(", ") { it.jpKode }})",
+                            affectedJadwalIds = list.map { it.id }
+                        )
+                    )
+                }
             }
         }
 

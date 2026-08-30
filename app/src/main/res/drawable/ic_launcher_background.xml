@@ -7,8 +7,8 @@
     <path
         android:pathData="M0,0h108v108h-108z">
         <gradient
-            android:startColor="#0F5132"
-            android:endColor="#198754"
+            android:startColor="#064E3B"
+            android:endColor="#059669"
             android:angle="135"
             android:type="linear" />
     </path>

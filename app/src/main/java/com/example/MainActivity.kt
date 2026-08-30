@@ -30,7 +30,12 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             SmartSchedulerTheme {
-                SmartSchedulerApp()
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    SmartSchedulerApp()
+                }
             }
         }
     }
@@ -62,7 +67,9 @@ fun SmartSchedulerApp() {
     val snackbarHostState = remember { SnackbarHostState() }
 
     val settingsMap = remember(pengaturanList) { pengaturanList.associate { it.key to it.value } }
-    val namaMadrasah = settingsMap["nama_madrasah"] ?: "MTs Negeri 1 Model"
+    val namaMadrasah = settingsMap["nama_madrasah"] ?: "MTs Darussalam"
+    val npsn = settingsMap["npsn"] ?: "20582511"
+    val nsm = settingsMap["nsm"] ?: "121235200016"
     val tahunPelajaran = settingsMap["tahun_pelajaran"] ?: "2025/2026"
     val semester = settingsMap["semester"] ?: "Ganjil"
 
@@ -90,12 +97,18 @@ fun SmartSchedulerApp() {
                         kelasList = kelasList,
                         jadwalDetails = jadwalDetails,
                         conflicts = conflicts,
+                        namaMadrasah = namaMadrasah,
+                        npsn = npsn,
+                        nsm = nsm,
                         onNavigateTo = { viewModel.navigateTo(it) },
-                        onRunAiScheduler = { viewModel.runAiScheduleGenerator("generate") }
+                        onRunAiScheduler = { viewModel.runAiScheduleGenerator("generate") },
+                        onAutoFixConflicts = { viewModel.autoFixAllConflicts() }
                     )
 
                     AppScreen.GURU -> GuruScreen(
                         guruList = guruList,
+                        mapelList = mapelList,
+                        jadwalDetails = jadwalDetails,
                         searchQuery = uiState.guruSearchQuery,
                         filterStatus = uiState.guruFilterStatus,
                         activeRole = uiState.activeRole,
@@ -150,6 +163,10 @@ fun SmartSchedulerApp() {
                         hariList = hariList,
                         jamList = jamList,
                         ruanganList = ruanganList,
+                        pengaturanList = pengaturanList,
+                        namaMadrasah = namaMadrasah,
+                        tahunPelajaran = tahunPelajaran,
+                        semester = semester,
                         activeRole = uiState.activeRole,
                         onSaveJadwalSlot = { hId, jKode, kId, gId, mKode, rId ->
                             viewModel.saveJadwalSlot(hId, jKode, kId, gId, mKode, rId)
@@ -157,7 +174,8 @@ fun SmartSchedulerApp() {
                         onClearJadwalSlot = { hId, jKode, kId ->
                             viewModel.clearJadwalSlot(hId, jKode, kId)
                         },
-                        onClearAllJadwal = { viewModel.clearAllJadwal() }
+                        onClearAllJadwal = { viewModel.clearAllJadwal() },
+                        onAutoFixConflicts = { viewModel.autoFixAllConflicts() }
                     )
 
                     AppScreen.AI_SCHEDULER -> AiSchedulerScreen(
@@ -181,7 +199,9 @@ fun SmartSchedulerApp() {
                         kelasList = kelasList,
                         mapelList = mapelList,
                         hariList = hariList,
+                        jamList = jamList,
                         ruanganList = ruanganList,
+                        pengaturanList = pengaturanList,
                         namaMadrasah = namaMadrasah,
                         tahunPelajaran = tahunPelajaran,
                         semester = semester
@@ -251,6 +271,46 @@ fun SmartSchedulerApp() {
             )
         }
 
+        val bottomBarBlock: @Composable () -> Unit = {
+            if (!isWideScreen) {
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 6.dp
+                ) {
+                    NavigationBarItem(
+                        selected = uiState.currentScreen == AppScreen.DASHBOARD,
+                        onClick = { viewModel.navigateTo(AppScreen.DASHBOARD) },
+                        icon = { Icon(Icons.Default.Dashboard, contentDescription = "Dashboard") },
+                        label = { Text("Beranda") }
+                    )
+                    NavigationBarItem(
+                        selected = uiState.currentScreen == AppScreen.JADWAL,
+                        onClick = { viewModel.navigateTo(AppScreen.JADWAL) },
+                        icon = { Icon(Icons.Default.CalendarMonth, contentDescription = "Jadwal") },
+                        label = { Text("Jadwal") }
+                    )
+                    NavigationBarItem(
+                        selected = uiState.currentScreen == AppScreen.AI_SCHEDULER,
+                        onClick = { viewModel.navigateTo(AppScreen.AI_SCHEDULER) },
+                        icon = { Icon(Icons.Default.AutoAwesome, contentDescription = "AI Auto") },
+                        label = { Text("AI Auto") }
+                    )
+                    NavigationBarItem(
+                        selected = uiState.currentScreen in listOf(AppScreen.GURU, AppScreen.MAPEL, AppScreen.KELAS, AppScreen.HARI, AppScreen.JAM, AppScreen.RUANGAN),
+                        onClick = { viewModel.navigateTo(AppScreen.GURU) },
+                        icon = { Icon(Icons.Default.People, contentDescription = "Master Data") },
+                        label = { Text("Guru") }
+                    )
+                    NavigationBarItem(
+                        selected = uiState.currentScreen == AppScreen.LAPORAN,
+                        onClick = { viewModel.navigateTo(AppScreen.LAPORAN) },
+                        icon = { Icon(Icons.Default.PictureAsPdf, contentDescription = "Laporan") },
+                        label = { Text("Laporan") }
+                    )
+                }
+            }
+        }
+
         if (isWideScreen) {
             Row(modifier = Modifier.fillMaxSize()) {
                 AppNavigationDrawerContent(
@@ -289,6 +349,7 @@ fun SmartSchedulerApp() {
             ) {
                 Scaffold(
                     topBar = topBarBlock,
+                    bottomBar = bottomBarBlock,
                     snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
                 ) { innerPadding ->
                     contentBlock(innerPadding)

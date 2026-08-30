@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -35,12 +36,21 @@ fun PengaturanScreen(
         pengaturanList.associate { it.key to it.value }
     }
 
-    var namaMadrasah by remember(settingsMap) { mutableStateOf(settingsMap["nama_madrasah"] ?: "MTs Negeri 1 Model") }
+    var namaMadrasah by remember(settingsMap) { mutableStateOf(settingsMap["nama_madrasah"] ?: "MTs Darussalam") }
+    var npsn by remember(settingsMap) { mutableStateOf(settingsMap["npsn"] ?: "20582511") }
+    var nsm by remember(settingsMap) { mutableStateOf(settingsMap["nsm"] ?: "121235200016") }
+    var alamat by remember(settingsMap) { mutableStateOf(settingsMap["alamat"] ?: "Lembeyan Kulon, Kec. Lembeyan") }
+    var kota by remember(settingsMap) { mutableStateOf(settingsMap["kota"] ?: "Magetan") }
+    var provinsi by remember(settingsMap) { mutableStateOf(settingsMap["provinsi"] ?: "Jawa Timur") }
     var semester by remember(settingsMap) { mutableStateOf(settingsMap["semester"] ?: "Ganjil") }
     var tahunPelajaran by remember(settingsMap) { mutableStateOf(settingsMap["tahun_pelajaran"] ?: "2025/2026") }
     var durasiJp by remember(settingsMap) { mutableStateOf(settingsMap["durasi_jp"] ?: "40 Menit") }
     var jamMasuk by remember(settingsMap) { mutableStateOf(settingsMap["jam_masuk"] ?: "07.00") }
     var jamPulang by remember(settingsMap) { mutableStateOf(settingsMap["jam_pulang"] ?: "13.20") }
+    var kepalaMadrasah by remember(settingsMap) { mutableStateOf(settingsMap["kepala_madrasah"] ?: "Misbahul Munir, S.Pd") }
+    var nipKepala by remember(settingsMap) { mutableStateOf(settingsMap["nip_kepala"] ?: "-") }
+    var wakaKurikulum by remember(settingsMap) { mutableStateOf(settingsMap["waka_kurikulum"] ?: "Sabta Andry Desi Saputro, S.Pd") }
+    var nipWaka by remember(settingsMap) { mutableStateOf(settingsMap["nip_waka"] ?: "-") }
 
     val roles = listOf("Administrator", "Operator Madrasah", "Kepala Madrasah")
 
@@ -84,6 +94,74 @@ fun PengaturanScreen(
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
             ) {
+                // Identity Card Banner MTs Darussalam
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(44.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.Verified,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                }
+                            }
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "DATA POKOK MADRASAH RESMI",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                )
+                                Text(
+                                    text = "MTs Darussalam",
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                                )
+                                Text(
+                                    text = "NPSN: $npsn • NSM: $nsm",
+                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = "Lembeyan Kulon, Kec. Lembeyan, Kab. Magetan, Jawa Timur",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Button(
+                            onClick = onResetSampleData,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Icon(Icons.Default.Sync, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Muat Ulang / Sinkronisasi Data Pokok MTs Darussalam")
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -91,7 +169,7 @@ fun PengaturanScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = "PENGATURAN MADRASAH & TAHUN PELAJARAN",
+                            text = "IDENTITAS RESMI & TAHUN PELAJARAN",
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
@@ -112,27 +190,93 @@ fun PengaturanScreen(
 
                         Spacer(modifier = Modifier.height(12.dp))
 
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = npsn,
+                                onValueChange = {
+                                    npsn = it
+                                    onSavePengaturan("npsn", it)
+                                },
+                                label = { Text("NPSN") },
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = nsm,
+                                onValueChange = {
+                                    nsm = it
+                                    onSavePengaturan("nsm", it)
+                                },
+                                label = { Text("NSM") },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
                         OutlinedTextField(
-                            value = semester,
+                            value = alamat,
                             onValueChange = {
-                                semester = it
-                                onSavePengaturan("semester", it)
+                                alamat = it
+                                onSavePengaturan("alamat", it)
                             },
-                            label = { Text("Semester (Ganjil / Genap)") },
+                            label = { Text("Alamat Madrasah") },
                             modifier = Modifier.fillMaxWidth()
                         )
 
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        OutlinedTextField(
-                            value = tahunPelajaran,
-                            onValueChange = {
-                                tahunPelajaran = it
-                                onSavePengaturan("tahun_pelajaran", it)
-                            },
-                            label = { Text("Tahun Pelajaran") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = kota,
+                                onValueChange = {
+                                    kota = it
+                                    onSavePengaturan("kota", it)
+                                },
+                                label = { Text("Kota / Kabupaten") },
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = provinsi,
+                                onValueChange = {
+                                    provinsi = it
+                                    onSavePengaturan("provinsi", it)
+                                },
+                                label = { Text("Provinsi") },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = semester,
+                                onValueChange = {
+                                    semester = it
+                                    onSavePengaturan("semester", it)
+                                },
+                                label = { Text("Semester") },
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = tahunPelajaran,
+                                onValueChange = {
+                                    tahunPelajaran = it
+                                    onSavePengaturan("tahun_pelajaran", it)
+                                },
+                                label = { Text("Tahun Pelajaran") },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
 
                         Spacer(modifier = Modifier.height(12.dp))
 
@@ -168,6 +312,72 @@ fun PengaturanScreen(
                                     onSavePengaturan("jam_pulang", it)
                                 },
                                 label = { Text("Jam Pulang") },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        HorizontalDivider()
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Text(
+                            text = "PENGESAHAN & PENANDATANGAN DOKUMEN (PDF)",
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = kepalaMadrasah,
+                                onValueChange = {
+                                    kepalaMadrasah = it
+                                    onSavePengaturan("kepala_madrasah", it)
+                                },
+                                label = { Text("Nama Kepala Madrasah") },
+                                modifier = Modifier.weight(1.2f)
+                            )
+                            OutlinedTextField(
+                                value = nipKepala,
+                                onValueChange = {
+                                    nipKepala = it
+                                    onSavePengaturan("nip_kepala", it)
+                                },
+                                label = { Text("NIP Kepala") },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = wakaKurikulum,
+                                onValueChange = {
+                                    wakaKurikulum = it
+                                    onSavePengaturan("waka_kurikulum", it)
+                                },
+                                label = { Text("Nama Waka Kurikulum") },
+                                modifier = Modifier.weight(1.2f)
+                            )
+                            OutlinedTextField(
+                                value = nipWaka,
+                                onValueChange = {
+                                    nipWaka = it
+                                    onSavePengaturan("nip_waka", it)
+                                },
+                                label = { Text("NIP Waka Kurikulum") },
                                 modifier = Modifier.weight(1f)
                             )
                         }
